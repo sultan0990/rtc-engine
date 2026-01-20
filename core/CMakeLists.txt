@@ -10,6 +10,7 @@ set(RTC_CORE_SOURCES
     src/stun_client.cpp
     src/turn_client.cpp
     src/ice_agent.cpp
+    src/lock_free_queue.cpp
 )
 
 # Header files
@@ -21,6 +22,7 @@ set(RTC_CORE_HEADERS
     include/rtc/stun_client.h
     include/rtc/turn_client.h
     include/rtc/ice_agent.h
+    include/rtc/lock_free_queue.h
 )
 
 # Create library

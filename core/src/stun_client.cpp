@@ -9,7 +9,6 @@
 
 #include "rtc/udp_socket.h"
 
-
 namespace rtc
 {
 
@@ -57,10 +56,38 @@ std::optional<StunMessage> StunMessage::parse(std::span<const uint8_t> data)
   StunMessage msg;
   msg.type_ = static_cast<StunMessageType>((data[0] << 8) | data[1]);
 
+  // Message length (excludes 20-byte header)
+  uint16_t msg_length = (static_cast<uint16_t>(data[2]) << 8) | data[3];
+  if (data.size() < 20 + msg_length)
+  {
+    return std::nullopt;
+  }
+
   // Copy transaction ID
   std::memcpy(msg.transaction_id_.data, &data[8], 12);
 
-  // TODO: Parse attributes
+  // Parse attributes
+  size_t offset = 20;
+  while (offset + 4 <= 20 + msg_length)
+  {
+    StunAttribute attr;
+    attr.type = static_cast<StunAttributeType>((data[offset] << 8) | data[offset + 1]);
+    uint16_t attr_length = (static_cast<uint16_t>(data[offset + 2]) << 8) | data[offset + 3];
+    offset += 4;
+
+    if (offset + attr_length > data.size())
+    {
+      break;
+    }
+
+    attr.value.assign(data.begin() + offset, data.begin() + offset + attr_length);
+    msg.attributes_.push_back(std::move(attr));
+
+    // Align to 4-byte boundary
+    offset += attr_length;
+    offset = (offset + 3) & ~3;
+  }
+
   return msg;
 }
 
@@ -110,7 +137,40 @@ void StunMessage::add_fingerprint()
 
 std::optional<SocketAddress> StunMessage::get_xor_mapped_address() const
 {
-  // TODO: Implement
+  // Magic cookie for XOR
+  constexpr uint32_t MAGIC_COOKIE = 0x2112A442;
+
+  for (const auto& attr : attributes_)
+  {
+    if (attr.type == StunAttributeType::XOR_MAPPED_ADDRESS && attr.value.size() >= 8)
+    {
+      // Format: 1 byte reserved, 1 byte family, 2 bytes port, 4 bytes IP (IPv4)
+      uint8_t family = attr.value[1];
+      if (family != 0x01)  // IPv4 only for now
+      {
+        continue;
+      }
+
+      // XOR port with upper 16 bits of magic cookie
+      uint16_t xor_port = (static_cast<uint16_t>(attr.value[2]) << 8) | attr.value[3];
+      uint16_t port = xor_port ^ static_cast<uint16_t>(MAGIC_COOKIE >> 16);
+
+      // XOR IP address with magic cookie
+      uint32_t xor_ip = (static_cast<uint32_t>(attr.value[4]) << 24) |
+                        (static_cast<uint32_t>(attr.value[5]) << 16) |
+                        (static_cast<uint32_t>(attr.value[6]) << 8) |
+                        static_cast<uint32_t>(attr.value[7]);
+      uint32_t ip = xor_ip ^ MAGIC_COOKIE;
+
+      // Convert to dotted-decimal
+      std::string ip_str = std::to_string((ip >> 24) & 0xFF) + "." +
+                           std::to_string((ip >> 16) & 0xFF) + "." +
+                           std::to_string((ip >> 8) & 0xFF) + "." + std::to_string(ip & 0xFF);
+
+      return SocketAddress{ip_str, port};
+    }
+  }
+
   return std::nullopt;
 }
 
