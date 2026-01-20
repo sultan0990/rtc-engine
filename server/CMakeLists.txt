@@ -1,13 +1,24 @@
-# RTC Server - SFU/MCU media server
+# RTC Server Library - SFU for multi-party conferencing
 cmake_minimum_required(VERSION 3.20)
 
-# Placeholder sources (will be implemented in Phase 4)
+# Source files
 set(RTC_SERVER_SOURCES
-    src/server_placeholder.cpp
+    src/rtp_forwarder.cpp
+    src/room_manager.cpp
+    src/subscription_manager.cpp
+    src/sfu_server.cpp
+)
+
+# Header files
+set(RTC_SERVER_HEADERS
+    include/rtc/server/rtp_forwarder.h
+    include/rtc/server/room_manager.h
+    include/rtc/server/subscription_manager.h
+    include/rtc/server/sfu_server.h
 )
 
 # Create library
-add_library(rtc_server STATIC ${RTC_SERVER_SOURCES})
+add_library(rtc_server STATIC ${RTC_SERVER_SOURCES} ${RTC_SERVER_HEADERS})
 
 # Include directories
 target_include_directories(rtc_server PUBLIC
@@ -15,11 +26,12 @@ target_include_directories(rtc_server PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-# Link to other RTC libraries
-target_link_libraries(rtc_server PUBLIC rtc_core rtc_audio rtc_video)
+# Link to core library
+target_link_libraries(rtc_server PUBLIC rtc_core)
 
-# Future dependencies (Phase 4):
-# - Prometheus client for metrics
-# - Redis client for session state
+# Platform-specific
+if(UNIX AND NOT APPLE)
+    target_link_libraries(rtc_server PRIVATE pthread)
+endif()
 
 target_compile_features(rtc_server PUBLIC cxx_std_20)
