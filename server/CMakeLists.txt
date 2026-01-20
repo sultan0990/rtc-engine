@@ -10,6 +10,7 @@ set(RTC_SERVER_SOURCES
     src/audio_mixer.cpp
     src/video_compositor.cpp
     src/conference_bridge.cpp
+    src/cluster_coordinator.cpp
 )
 
 # Header files
@@ -21,6 +22,7 @@ set(RTC_SERVER_HEADERS
     include/rtc/server/audio_mixer.h
     include/rtc/server/video_compositor.h
     include/rtc/server/conference_bridge.h
+    include/rtc/server/cluster_coordinator.h
 )
 
 # Create library

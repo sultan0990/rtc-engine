@@ -11,6 +11,9 @@ set(RTC_CORE_SOURCES
     src/turn_client.cpp
     src/ice_agent.cpp
     src/lock_free_queue.cpp
+    src/health_monitor.cpp
+    src/connection_recovery.cpp
+    src/metrics_exporter.cpp
 )
 
 # Header files
@@ -23,6 +26,9 @@ set(RTC_CORE_HEADERS
     include/rtc/turn_client.h
     include/rtc/ice_agent.h
     include/rtc/lock_free_queue.h
+    include/rtc/health_monitor.h
+    include/rtc/connection_recovery.h
+    include/rtc/metrics_exporter.h
 )
 
 # Create library
